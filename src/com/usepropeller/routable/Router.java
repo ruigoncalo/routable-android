@@ -276,9 +276,9 @@ public class Router {
 		* @param context The context which is used in the generated {@link Intent}
 		* @param sendPendingIntent start activity throught pending intent
 		*/
-		public void open(String url, Context context, boolean sendPendingIntent) {
-				this.open(url, null, context, sendPendingIntent);
-		}
+	public void open(String url, Context context, boolean sendPendingIntent) {
+		this.open(url, null, context, sendPendingIntent);
+	}
 
 	/**
      * Open a map'd URL set using {@link #map(String, Class)} or {@link #map(String, RouterCallback)}
@@ -317,7 +317,7 @@ public class Router {
 		* @param context The context which is used in the generated {@link Intent}
 		* @param sendPendingIntent start activity throught pending intent
 		*/
-		public void open(String url, Bundle extras, Context context) {
+		public void open(String url, Bundle extras, Context context, boolean sendPendingIntent) {
 			if (context == null) {
 				throw new ContextNotProvided(
 						"You need to supply a context for Router "
