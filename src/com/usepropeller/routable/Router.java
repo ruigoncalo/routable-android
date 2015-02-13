@@ -37,6 +37,9 @@ import android.net.Uri;
 import android.os.Bundle;
 
 public class Router {
+
+	private static final int PENDING_INTENT_RQ = 12345;
+
 	private static final Router _router = new Router();
 
 	/**
@@ -268,6 +271,16 @@ public class Router {
 	}
 
 	/**
+		* Open a map'd URL set using {@link #map(String, Class)} or {@link #map(String, RouterCallback)}
+		* @param url The URL; for example, "users/16" or "groups/5/topics/20"
+		* @param context The context which is used in the generated {@link Intent}
+		* @param sendPendingIntent start activity throught pending intent
+		*/
+		public void open(String url, Context context, boolean sendPendingIntent) {
+				this.open(url, null, context, sendPendingIntent);
+		}
+
+	/**
      * Open a map'd URL set using {@link #map(String, Class)} or {@link #map(String, RouterCallback)}
      * @param url The URL; for example, "users/16" or "groups/5/topics/20"
      * @param extras The {@link Bundle} which contains the extras to be assigned to the generated {@link Intent}
@@ -296,6 +309,54 @@ public class Router {
 		}
 		context.startActivity(intent);
 	}
+
+	/**
+		* Open a map'd URL set using {@link #map(String, Class)} or {@link #map(String, RouterCallback)}
+		* @param url The URL; for example, "users/16" or "groups/5/topics/20"
+		* @param extras The {@link Bundle} which contains the extras to be assigned to the generated {@link Intent}
+		* @param context The context which is used in the generated {@link Intent}
+		* @param sendPendingIntent start activity throught pending intent
+		*/
+		public void open(String url, Bundle extras, Context context, boolean sendPendingIntent) {
+				if (context == null) {
+						throw new ContextNotProvided(
+										"You need to supply a context for Router "
+														+ this.toString());
+				}
+				RouterParams params = this.paramsForUrl(url);
+				RouterOptions options = params.routerOptions;
+				if (options.getCallback() != null) {
+						options.getCallback().run(params.openParams);
+						return;
+				}
+
+				Intent intent = this.intentFor(context, url);
+				if (intent == null) {
+						// Means the options weren't opening a new activity
+						return;
+				} else {
+						if(!sendPendingIntent){
+								intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+						}
+				}
+				if (extras != null) {
+						intent.putExtras(extras);
+				}
+
+				if(sendPendingIntent){
+						PendingIntent pendingIntent =
+										TaskStackBuilder.create(context)
+														.addNextIntentWithParentStack(intent)
+														.getPendingIntent(PENDING_INTENT_RQ, PendingIntent.FLAG_UPDATE_CURRENT);
+						try {
+								pendingIntent.send();
+						} catch (PendingIntent.CanceledException exception) {
+								// handle exception
+						}
+				} else {
+						context.startActivity(intent);
+				}
+		}
 
 	/*
 	 * Allows Intents to be spawned regardless of what context they were opened with.
@@ -410,7 +471,8 @@ public class Router {
 			String routerPart = routerUrlSegments[index];
 			String givenPart = givenUrlSegments[index];
 
-			if (routerPart.charAt(0) == ':') {
+			// check if routerPart is not empty to avoid StringIndexOutOfBoundsException
+			if (!routerPart.isEmpty() && routerPart.charAt(0) == ':') {
 				String key = routerPart.substring(1, routerPart.length());
 				formatParams.put(key, givenPart);
 				continue;
